@@ -1,43 +1,18 @@
-# Build stage
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-# Production stage
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Define default values
-ARG NODE_ENV=production
-ARG PORT=3000
-ARG CACHE_TYPE=memory
-
-# Set environment variables
-ENV NODE_ENV=${NODE_ENV}
+ENV PORT=10000
 ENV HOST=0.0.0.0
-ENV PORT=${PORT}
-ENV CACHE_TYPE=${CACHE_TYPE}
+ENV NODE_ENV=production
+ENV CACHE_TYPE=memory
+ENV PUBLIC_URL=https://kirastreams-api.onrender.com
 
-# Copy only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install && npm cache clean --force
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
+COPY . .
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+EXPOSE 10000
 
-USER nodejs
-
-EXPOSE ${PORT}
-
-CMD ["node", "dist/server.js"]
+CMD ["npx", "tsx", "src/server.ts"]
